@@ -8,14 +8,37 @@ output: github_document
 ### Load Necessary Package(s)
 ```{r}
 library(tidyverse)
+library(readxl)
 ```
 
 # Problem 1
 ### Import Data: NYC Transit data
-```{r}
+```{r data import and cleaning}
 NYC_transit = read.csv(file = './data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv') %>% 
   janitor::clean_names() %>% 
   select(line:entry, vending, ada) %>% 
   mutate(entry = recode(entry, "YES" = TRUE, "NO" = FALSE))
+```
+The NYC_transit dataset contains 19 variables indicating line (line), name of station (station_name), station location (station_latitude and station_longitude), train routes available (route1 through route11), ...
+
+### The Dataset
+After importing the dataset, I used a series of pipes to chain together multiple functions. Using the `clean_names()` function in the janitor package, I reformatted the original variable names, replacing '.' with '_' and all uppercase letters with lowercase letters. Following this, I selected the variables I wanted to keep using the `select()` function. Finally, using the `mutate()` and `recode()` functions I changed the variable 'entry' data type to logical.
+
+The NYC_transit dataset is `r nrow(NYC_transit)` rows by `r ncol(NYC_transit)` columns.
+
+This dataset is not tidy. While easy to read, the variables route1 through route11 can be condensed down to a single column, reformatting the dataset from wide to long.
+
+There are `r nrow(distinct(NYC_transit, line, station_name))` distinct stations in the NYC subway system. The number of these stations that are ADA compliant are `r nrow(filter(distinct(NYC_transit, line, station_name, ada), ada == TRUE))`. The proportion of station entrances/exits without vending that allow entrance is `r nrow(filter(NYC_transit, vending == 'NO', entry == TRUE))/nrow(filter(NYC_transit, vending == 'NO'))`.
+
+Reformatting data so that it is more tidy:
+```{r tidy up dataset}
+NYC_transit_tidy = gather(NYC_transit, key = route_number, value = route_name, route1:route11)
+```
+
+
+# Problem 2
+### Import Data: Mr. Trash Wheel
+```{r}
+trash = read_excel('./data/HealthyHarborWaterWheelTotals2017-9-26.xlsx', 'Mr. Trash Wheel', jjj)
 ```
 
