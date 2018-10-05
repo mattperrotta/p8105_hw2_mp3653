@@ -20,9 +20,10 @@ NYC_transit = read.csv(file = './data/NYC_Transit_Subway_Entrance_And_Exit_Data.
   select(line:entry, vending, ada) %>% 
   mutate(entry = recode(entry, "YES" = TRUE, "NO" = FALSE))
 ```
-The NYC_transit dataset contains 19 variables indicating line (line), name of station (station_name), station location (station_latitude and station_longitude), train routes available (route1 through route11), ...
 
 ### The Dataset
+The NYC_transit dataset contains 19 variables describing subway stations and where their entrances are located, what subway lines they service, and accessibility information.
+
 After importing the dataset, I used a series of pipes to chain together multiple functions. Using the `clean_names()` function in the janitor package, I reformatted the original variable names, replacing '.' with '_' and all uppercase letters with lowercase letters. Following this, I selected the variables I wanted to keep using the `select()` function. Finally, using the `mutate()` and `recode()` functions I changed the variable 'entry' data type to logical.
 
 The NYC_transit dataset is `r nrow(NYC_transit)` rows by `r ncol(NYC_transit)` columns.
@@ -50,12 +51,14 @@ trash = read_excel('./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx', 'Mr. Tr
 precp_2017 = read_excel('./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx', '2017 Precipitation',
                         range = "A2:B14") %>% 
   janitor::clean_names() %>% 
-  mutate(year = 2017)
+  mutate(year = 2017) %>% 
+  rename(total_precipitation = total)
 
 precp_2016 = read_excel('./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx', '2016 Precipitation',
                         range = "A2:B14") %>% 
   janitor::clean_names() %>% 
-  mutate(year = 2016)
+  mutate(year = 2016) %>%   
+  rename(total_precipitation = total)
 ```
 
 ### Combine precipitation datasets
@@ -68,8 +71,11 @@ precp_data = rbind(
 ```
 
 ### The Dataset
-The dataset `trash` contains `r nrow(trash)` observations. Of the `r ncol(trash)` variables, ....
-In 2017, the total precipitation was `r sum(filter(precp_data, year == 2017)$total)`inches. The median number of sports balls collected in 2016 was `r median(filter(trash, year == 2016)$sports_balls)`. 
+The dataset `trash` contains `r nrow(trash)` observations. Of the `r ncol(trash)` variables, `weight_tons` and `volume_cubic_yards` are key in understanding the amount of trash collected in the harbor and to guage the effectiveness of the trash collecting methods.
+
+The dataset `precp_data` contains `nrow(precp_data)` observations. There are only `r ncol(precp_data)` variables in the dataset, however, `total_precipitation` is key in understanding rainfall per month in the harbor.
+
+In 2017, the total precipitation was `r sum(filter(precp_data, year == 2017)$total_precipitation)`inches. The median number of sports balls collected in 2016 was `r median(filter(trash, year == 2016)$sports_balls)`. 
 
 # Problem 3
 ### Import Data: 
@@ -89,11 +95,15 @@ There are `r nrow(distinct(brfss, state, county))` unique locations in the datas
 There are `r nrow(distinct(brfss, state))` states reported in the dateset, indicating that all of them are accounted for (including the District of Columbia). 
 
 ```{r}
-prop.table(brfss, state)
+sort(table(brfss$state))
 ```
 
+The state that appears the most is New Jersey (NJ)
+
+In 2002, the median of the "Excellent" response variable was `r median(filter(brfss, year == 2002)$excellent, na.rm = TRUE)`.
+
 ### histogram
-```{r}
+```{r create histogram for excellent responses in 2002}
 brfss %>% 
   filter(year == 2002) %>% 
   ggplot(aes(x = excellent)) +
@@ -102,7 +112,7 @@ brfss %>%
 
 
 ### scatterplot
-```{r}
+```{r create scatterplot}
 brfss %>% 
   filter(county %in% c("NY - New York County", "NY - Queens County")) %>% 
   filter(year >= 2002, year <= 2010) %>% 
