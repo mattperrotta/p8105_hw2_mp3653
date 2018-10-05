@@ -9,6 +9,7 @@ output: github_document
 ```{r}
 library(tidyverse)
 library(readxl)
+library(p8105.datasets)
 ```
 
 # Problem 1
@@ -34,11 +35,78 @@ Reformatting data so that it is more tidy:
 ```{r tidy up dataset}
 NYC_transit_tidy = gather(NYC_transit, key = route_number, value = route_name, route1:route11)
 ```
-
+The number of distinct stations that serve the A train are `r nrow(filter(distinct(NYC_transit_tidy, line, station_name, route_name), route_name == "A"))`. The number of these stations that are ADA compliant are `r nrow(filter(filter(distinct(NYC_transit_tidy, line, station_name, route_name, ada), route_name == "A"), ada == TRUE))`
 
 # Problem 2
-### Import Data: Mr. Trash Wheel
+### Import Data: Mr. Trash Wheel data and precipitation data
+```{r data import and cleaning for problem 2}
+trash = read_excel('./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx', 'Mr. Trash Wheel', 
+                   range = "A2:N338") %>% 
+  janitor::clean_names() %>% 
+  filter(!is.na(dumpster)) %>% 
+  mutate(sports_balls = round(sports_balls)) %>% 
+  mutate(sports_balls = as.integer(sports_balls))
+
+precp_2017 = read_excel('./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx', '2017 Precipitation',
+                        range = "A2:B14") %>% 
+  janitor::clean_names() %>% 
+  mutate(year = 2017)
+
+precp_2016 = read_excel('./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx', '2016 Precipitation',
+                        range = "A2:B14") %>% 
+  janitor::clean_names() %>% 
+  mutate(year = 2016)
+```
+
+### Combine precipitation datasets
+```{r using rbind to combine datasets}
+precp_data = rbind(
+  mutate(
+    precp_2016, month = month.name), 
+  mutate(
+    precp_2017, month = month.name))
+```
+
+### The Dataset
+The dataset `trash` contains `r nrow(trash)` observations. Of the `r ncol(trash)` variables, ....
+In 2017, the total precipitation was `r sum(filter(precp_data, year == 2017)$total)`inches. The median number of sports balls collected in 2016 was `r median(filter(trash, year == 2016)$sports_balls)`. 
+
+# Problem 3
+### Import Data: 
 ```{r}
-trash = read_excel('./data/HealthyHarborWaterWheelTotals2017-9-26.xlsx', 'Mr. Trash Wheel', jjj)
+brfss = p8105.datasets::brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  rename(state = locationabbr, county = locationdesc) %>% 
+  filter(topic == 'Overall Health') %>% 
+  select(-class, -topic, -question, -sample_size, -confidence_limit_low:-geo_location) %>% 
+  spread(key = response, value = data_value) %>% 
+  janitor::clean_names() %>% 
+  mutate(prop_excellent_vgood = (excellent + very_good)/(excellent + very_good + good + fair + poor))
+```
+
+There are `r nrow(distinct(brfss, state, county))` unique locations in the dataset. 
+
+There are `r nrow(distinct(brfss, state))` states reported in the dateset, indicating that all of them are accounted for (including the District of Columbia). 
+
+```{r}
+prop.table(brfss, state)
+```
+
+### histogram
+```{r}
+brfss %>% 
+  filter(year == 2002) %>% 
+  ggplot(aes(x = excellent)) +
+  geom_histogram()
+```
+
+
+### scatterplot
+```{r}
+brfss %>% 
+  filter(county %in% c("NY - New York County", "NY - Queens County")) %>% 
+  filter(year >= 2002, year <= 2010) %>% 
+  ggplot(aes(x = year, y = prop_excellent_vgood)) +
+  geom_point()
 ```
 
